@@ -1,0 +1,57 @@
+name:  CI/CD pipeline
+
+on:
+  push:
+    branches: [ "cicd" ]
+  pull_request:
+    branches: [  "cicd" ]
+
+
+
+
+jobs:
+  build_and_deploy:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [ 16.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+    - run: yarn install 
+    - run: yarn build
+      continue-on-error: true
+
+      # env:
+      #   JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      #   DB_NAME: ${{ secrets.DB_NAME }}
+      #   DB_USER: ${{ secrets.DB_USER }}
+      #   DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      #   DB_HOST: ${{ secrets.DB_HOST }}
+      #   DB_PORT: ${{ secrets.DB_PORT }}
+      #   CLOUD_NAME: ${{ secrets.CLOUD_NAME }}
+      #   CLOUD_API_KEY: ${{ secrets.CLOUD_API_KEY }}
+      #   PASSPORT_SECRET: ${{ secrets.PASSPORT_SECRET }}
+      #   GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      #   GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      #   MAIL_EMAIL: ${{ secrets.MAIL_EMAIL }}
+      #   MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+
+    - name: Deploy to Render
+      uses: johnbeynon/render-deploy-action@v0.0.8
+      with:
+        service-id: ${{ secrets.SERVICE_ID }}
+        api-key: ${{ secrets.RENDER_API_KEY }}
+        branch: development
+        dockerfilePath: Dockerfile
+        dockerContext: .
+        envVarsToMask: JWT_SECRET,DB_NAME,DB_USER,DB_PASSWORD,DB_HOST,DB_PORT,CLOUD_NAME,CLOUD_API_KEY,PASSPORT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,MAIL_EMAIL,MAIL_PASSWORD
+        startcommand: yarn build
+        continue-on-error: true
